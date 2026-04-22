@@ -183,8 +183,7 @@ const createField = async (req, res) => {
     await beginTransaction();
 
     const result = await query(
-      `insert into form_fields
-        (form_id, label, field_type, display_order, is_required, max_length, min_value, max_value, allow_past_date)
+      `insert into form_fields (form_id, label, field_type, display_order, is_required, max_length, min_value, max_value, allow_past_date)
       values (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id,
