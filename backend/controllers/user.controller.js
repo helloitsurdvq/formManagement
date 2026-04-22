@@ -16,16 +16,16 @@ const query = (sql, params = []) => {
   });
 };
 
-const isPasswordMatch = async (plainPassword, savedPassword) => {
-  if (!savedPassword) {
+const isMatch = async (select, savePwd) => {
+  if (!savePwd) {
     return false;
   }
 
-  if (savedPassword.startsWith('$2a$') || savedPassword.startsWith('$2b$')) {
-    return bcrypt.compare(plainPassword, savedPassword);
+  if (savePwd.startsWith('$2a$') || savePwd.startsWith('$2b$')) {
+    return bcrypt.compare(select, savePwd);
   }
 
-  return plainPassword === savedPassword;
+  return select === savePwd;
 };
 
 const login = async (req, res) => {
@@ -36,17 +36,14 @@ const login = async (req, res) => {
   }
 
   try {
-    const accounts = await query(
-      'select id, email, password, type_of_account from accounts where email = ? limit 1',
-      [email]
-    );
+    const accounts = await query('select * from accounts where email = ? limit 1', [email]);
 
     if (accounts.length === 0) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
     const account = accounts[0];
-    const passwordMatches = await isPasswordMatch(password, account.password);
+    const passwordMatches = await isMatch(password, account.password);
 
     if (!passwordMatches) {
       return res.status(401).json({ message: 'Invalid email or password' });
