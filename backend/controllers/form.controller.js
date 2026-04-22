@@ -211,7 +211,6 @@ const updateForm = async (req, res) => {
 
     const setClause = Object.keys(updates).map((field) => `${field} = ?`).join(', ');
     const values = [...Object.values(updates), id];
-
     const result = await query(`update forms SET ${setClause} where id = ?`, values);
 
     if (result.affectedRows === 0) {
