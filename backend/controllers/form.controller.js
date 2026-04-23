@@ -32,10 +32,7 @@ const getCreatedBy = (req) => {
 
 const getFormWithFields = async (formId) => {
   const forms = await query('select * from forms where id = ?', [formId]);
-
-  if (forms.length === 0) {
-    return null;
-  }
+  if (forms.length === 0) return null;
 
   const rows = await query(
     `select
@@ -64,7 +61,6 @@ const getFormWithFields = async (formId) => {
   );
 
   const fieldsById = new Map();
-
   rows.forEach((row) => {
     if (!fieldsById.has(row.field_id)) {
       fieldsById.set(row.field_id, {
@@ -83,7 +79,6 @@ const getFormWithFields = async (formId) => {
         options: [],
       });
     }
-
     if (row.option_id) {
       fieldsById.get(row.field_id).options.push({
         id: row.option_id,
@@ -105,7 +100,6 @@ const getFormWithFields = async (formId) => {
 const getForms = async (req, res) => {
   try {
     const forms = await query(`select * from forms order by display_order asc, id DESC`);
-
     res.status(200).json({
       message: 'Get forms successfully',
       data: forms.map(normalizeForm),
@@ -124,19 +118,12 @@ const createForm = async (req, res) => {
       form_status = 'draft',
     } = req.body;
     const created_by = getCreatedBy(req);
-
-    if (!title || typeof title !== 'string' || title.trim() === '') {
+    if (!title || typeof title !== 'string' || title.trim() === '')
       return res.status(400).json({ message: 'title is required' });
-    }
-
-    if (!isPositiveId(created_by)) {
+    if (!isPositiveId(created_by))
       return res.status(400).json({ message: 'created_by is required' });
-    }
-
-    if (!valid_stats.includes(form_status)) {
+    if (!valid_stats.includes(form_status)) 
       return res.status(400).json({ message: 'form_status must be draft or active' });
-    }
-
     const result = await query(
       `insert into forms (title, form_description, display_order, form_status, created_by)
       values (?, ?, ?, ?, ?)`,
@@ -156,13 +143,9 @@ const createForm = async (req, res) => {
 const getFormById = async (req, res) => {
   try {
     const { id } = req.params;
-    if (!isPositiveId(id)) {
-      return res.status(400).json({ message: 'Invalid form id' });
-    }
+    if (!isPositiveId(id)) return res.status(400).json({ message: 'Invalid form id' });
     const form = await getFormWithFields(id);
-    if (!form) {
-      return res.status(404).json({ message: 'Form not found' });
-    }
+    if (!form) return res.status(404).json({ message: 'Form not found' });
     res.status(200).json({
       message: 'Get form successfully',
       data: form,
@@ -175,50 +158,32 @@ const getFormById = async (req, res) => {
 const updateForm = async (req, res) => {
   try {
     const { id } = req.params;
-
-    if (!isPositiveId(id)) {
+    if (!isPositiveId(id))
       return res.status(400).json({ message: 'Invalid form id' });
-    }
 
     const allowedFields = ['title', 'form_description', 'display_order', 'form_status'];
     const updates = {};
-
     allowedFields.forEach((field) => {
       if (Object.prototype.hasOwnProperty.call(req.body, field)) {
         updates[field] = req.body[field];
       }
     });
-
-    if (Object.keys(updates).length === 0) {
+    if (Object.keys(updates).length === 0) 
       return res.status(400).json({ message: 'No valid form fields to update' });
-    }
-
-    if (updates.title !== undefined && (!updates.title || updates.title.trim() === '')) {
+    if (updates.title !== undefined && (!updates.title || updates.title.trim() === ''))
       return res.status(400).json({ message: 'title cannot be empty' });
-    }
-
-    if (updates.form_status !== undefined && !valid_stats.includes(updates.form_status)) {
+    if (updates.form_status !== undefined && !valid_stats.includes(updates.form_status))
       return res.status(400).json({ message: 'form_status must be draft or active' });
-    }
-
-    if (updates.display_order !== undefined) {
-      updates.display_order = Number(updates.display_order) || 0;
-    }
-
-    if (updates.title !== undefined) {
-      updates.title = updates.title.trim();
-    }
+    if (updates.display_order !== undefined) updates.display_order = Number(updates.display_order) || 0;
+    if (updates.title !== undefined) updates.title = updates.title.trim();
 
     const setClause = Object.keys(updates).map((field) => `${field} = ?`).join(', ');
     const values = [...Object.values(updates), id];
     const result = await query(`update forms SET ${setClause} where id = ?`, values);
-
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'Form not found' });
     }
-
     const form = await getFormWithFields(id);
-
     res.status(200).json({
       message: 'Update form successfully',
       data: form,
@@ -244,10 +209,4 @@ const deleteForm = async (req, res) => {
   }
 };
 
-module.exports = {
-  getForms,
-  createForm,
-  getFormById,
-  updateForm,
-  deleteForm,
-};
+module.exports = { getForms, createForm, getFormById, updateForm, deleteForm };

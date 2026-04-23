@@ -49,16 +49,90 @@ const getSubmittedBy = (req) => req.user?.id || req.user?._id;
 
 const getActiveForms = async (req, res) => {
   try {
-    const forms = await query(
-      `select id, title, form_description, display_order, form_status, created_by, created_at, updated_at
-      from forms
-      where form_status = 'active'
-      order by display_order asc, id desc`
+    const rows = await query(
+      `select
+        f.id,
+        f.title,
+        f.form_description,
+        f.display_order,
+        f.form_status,
+        f.created_by,
+        f.created_at,
+        f.updated_at,
+        ff.id as field_id,
+        ff.label,
+        ff.field_type,
+        ff.display_order as field_display_order,
+        ff.is_required,
+        ff.max_length,
+        ff.min_value,
+        ff.max_value,
+        ff.allow_past_date,
+        fo.id as option_id,
+        fo.option_label,
+        fo.option_value,
+        fo.display_order as option_display_order
+      from forms f
+      left join form_fields ff on ff.form_id = f.id
+      left join field_options fo on fo.field_id = ff.id
+      where f.form_status = 'active'
+      order by f.display_order asc, f.id desc, ff.display_order asc, ff.id asc, fo.display_order asc, fo.id asc`
     );
+    const formsById = new Map();
+
+    rows.forEach((row) => {
+      if (!formsById.has(row.id)) {
+        formsById.set(row.id, {
+          id: row.id,
+          title: row.title,
+          form_description: row.form_description,
+          display_order: row.display_order,
+          form_status: row.form_status,
+          created_by: row.created_by,
+          created_at: row.created_at,
+          updated_at: row.updated_at,
+          fields: [],
+        });
+      }
+
+      if (!row.field_id) {
+        return;
+      }
+
+      const form = formsById.get(row.id);
+      let field = form.fields.find((item) => item.id === row.field_id);
+
+      if (!field) {
+        field = {
+          id: row.field_id,
+          form_id: row.id,
+          label: row.label,
+          field_type: row.field_type,
+          display_order: row.field_display_order,
+          is_required: toBoolean(row.is_required),
+          max_length: row.max_length,
+          min_value: row.min_value,
+          max_value: row.max_value,
+          allow_past_date: toBoolean(row.allow_past_date),
+          options: [],
+        };
+        form.fields.push(field);
+      }
+
+      if (row.option_id) {
+        field.options.push({
+          id: row.option_id,
+          field_id: row.field_id,
+          option_label: row.option_label,
+          option_value: row.option_value,
+          display_order: row.option_display_order,
+        });
+      }
+    });
 
     res.status(200).json({
       message: 'Get active forms successfully',
-      data: forms,
+      data: Array.from(formsById.values()),
     });
   } catch (error) {
     res.status(500).json({ message: 'Cannot get active forms', error: error.message });
@@ -78,7 +152,6 @@ const getFormFields = async (formId) => {
 
 const groupFields = (rows) => {
   const fieldsById = new Map();
-
   rows.forEach((row) => {
     if (!fieldsById.has(row.id)) {
       fieldsById.set(row.id, {
@@ -95,10 +168,7 @@ const groupFields = (rows) => {
         options: [],
       });
     }
-
-    if (row.option_id) {
-      fieldsById.get(row.id).options.push(row.option_value);
-    }
+    if (row.option_id) fieldsById.get(row.id).options.push(row.option_value);
   });
 
   return Array.from(fieldsById.values());
@@ -109,41 +179,31 @@ const getSubmittedValue = (values, fieldId) => {
     const submitted = values.find((item) => Number(item.field_id) === Number(fieldId));
     return submitted ? submitted.value : undefined;
   }
-
   return values ? values[fieldId] : undefined;
 };
 
 const validateSubmission = (fields, values) => {
   const errors = [];
-
   fields.forEach((field) => {
     const value = getSubmittedValue(values, field.id);
-
     if (field.is_required && isEmptyValue(value)) {
       errors.push(`${field.label} is required`);
       return;
     }
-
-    if (isEmptyValue(value)) {
-      return;
-    }
-
-    if (field.field_type === 'text' && field.max_length && String(value).length > Number(field.max_length)) {
+    if (isEmptyValue(value)) return;
+    if (field.field_type === 'text' && field.max_length && String(value).length > Number(field.max_length))
       errors.push(`${field.label} cannot be longer than ${field.max_length} characters`);
-    }
-
     if (field.field_type === 'number') {
       const numberValue = Number(value);
       if (Number.isNaN(numberValue)) {
         errors.push(`${field.label} must be a number`);
         return;
       }
-      if (field.min_value !== null && numberValue < Number(field.min_value)) {
+      if (field.min_value !== null && numberValue < Number(field.min_value)) 
         errors.push(`${field.label} must be greater than or equal to ${field.min_value}`);
-      }
-      if (field.max_value !== null && numberValue > Number(field.max_value)) {
+      if (field.max_value !== null && numberValue > Number(field.max_value)) 
         errors.push(`${field.label} must be less than or equal to ${field.max_value}`);
-      }
+      
     }
 
     if (field.field_type === 'date') {
@@ -159,7 +219,6 @@ const validateSubmission = (fields, values) => {
         errors.push(`${field.label} cannot be in the past`);
       }
     }
-
     if (field.field_type === 'select' && !field.options.includes(String(value))) {
       errors.push(`${field.label} must be one of the available options`);
     }
@@ -174,16 +233,11 @@ const buildSubmissionValue = (field, value) => {
     value_number: null,
     value_date: null,
   };
-
-  if (isEmptyValue(value)) {
-    return submissionValue;
-  }
-
+  if (isEmptyValue(value)) return submissionValue;
   if (field.field_type === 'number') {
     submissionValue.value_number = Number(value);
     return submissionValue;
   }
-
   if (field.field_type === 'date') {
     submissionValue.value_date = value;
     return submissionValue;
@@ -195,57 +249,38 @@ const buildSubmissionValue = (field, value) => {
 
 const submitForm = async (req, res) => {
   const { id } = req.params;
-
-  if (!isPositiveId(id)) {
-    return res.status(400).json({ message: 'Invalid form id' });
-  }
-
+  if (!isPositiveId(id)) return res.status(400).json({ message: 'Invalid form id' });
+  
   const submittedBy = getSubmittedBy(req);
-  if (!isPositiveId(submittedBy)) {
-    return res.status(400).json({ message: 'submitted_by is required' });
-  }
+  if (!isPositiveId(submittedBy)) return res.status(400).json({ message: 'submitted_by is required' });
 
   const values = req.body.values || {};
-
   try {
     const forms = await query('select id, form_status from forms where id = ?', [id]);
-
-    if (forms.length === 0) {
+    if (forms.length === 0) 
       return res.status(404).json({ message: 'Form not found' });
-    }
-
-    if (forms[0].form_status !== 'active') {
+    if (forms[0].form_status !== 'active') 
       return res.status(400).json({ message: 'Only active forms can be submitted' });
-    }
-
     const fields = groupFields(await getFormFields(id));
     const errors = validateSubmission(fields, values);
-
-    if (errors.length > 0) {
-      return res.status(400).json({ message: errors[0], errors });
-    }
+    if (errors.length > 0) return res.status(400).json({ message: errors[0], errors });
 
     await beginTransaction();
-
     const submissionResult = await query(
       'insert into form_submissions (form_id, submitted_by) values (?, ?)',
       [id, submittedBy]
     );
-
     for (const field of fields) {
       const rawValue = getSubmittedValue(values, field.id);
-
       if (isEmptyValue(rawValue)) {
         continue;
       }
 
       const submissionValue = buildSubmissionValue(field, rawValue);
-
       await query(
         `insert into submission_values (submission_id, field_id, value_text, value_number, value_date)
         values (?, ?, ?, ?, ?)`,
-        [
-          submissionResult.insertId,
+        [ submissionResult.insertId,
           field.id,
           submissionValue.value_text,
           submissionValue.value_number,
@@ -255,7 +290,6 @@ const submitForm = async (req, res) => {
     }
 
     await commit();
-
     res.status(201).json({
       message: 'Submit form successfully',
       data: {
@@ -275,7 +309,6 @@ const getSubmissions = async (req, res) => {
     const role = req.user?.type_of_account || req.user?.role;
     const params = [];
     let whereClause = '';
-
     if (role !== 'admin') {
       whereClause = 'where fs.submitted_by = ?';
       params.push(req.user.id);
@@ -308,7 +341,6 @@ const getSubmissions = async (req, res) => {
     );
 
     const submissionsById = new Map();
-
     rows.forEach((row) => {
       if (!submissionsById.has(row.submission_id)) {
         submissionsById.set(row.submission_id, {
@@ -321,7 +353,6 @@ const getSubmissions = async (req, res) => {
           values: [],
         });
       }
-
       if (row.value_id) {
         submissionsById.get(row.submission_id).values.push({
           id: row.value_id,
@@ -342,8 +373,4 @@ const getSubmissions = async (req, res) => {
   }
 };
 
-module.exports = {
-  getActiveForms,
-  submitForm,
-  getSubmissions,
-};
+module.exports = { getActiveForms, submitForm, getSubmissions };

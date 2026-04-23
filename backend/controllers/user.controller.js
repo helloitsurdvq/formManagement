@@ -17,38 +17,27 @@ const query = (sql, params = []) => {
 };
 
 const isMatch = async (select, savePwd) => {
-  if (!savePwd) {
-    return false;
-  }
-
-  if (savePwd.startsWith('$2a$') || savePwd.startsWith('$2b$')) {
-    return bcrypt.compare(select, savePwd);
-  }
-
+  if (!savePwd) return false;
+  if (savePwd.startsWith('$2a$') || savePwd.startsWith('$2b$')) return bcrypt.compare(select, savePwd);
   return select === savePwd;
 };
 
 const login = async (req, res) => {
   const { email, password } = req.body;
 
-  if (!email || !password) {
+  if (!email || !password)
     return res.status(400).json({ message: 'email and password are required' });
-  }
 
   try {
     const accounts = await query('select * from accounts where email = ? limit 1', [email]);
-
     if (accounts.length === 0) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
-
     const account = accounts[0];
     const passwordMatches = await isMatch(password, account.password);
 
-    if (!passwordMatches) {
+    if (!passwordMatches) 
       return res.status(401).json({ message: 'Invalid email or password' });
-    }
-
     const user = {
       id: account.id,
       email: account.email,
@@ -57,7 +46,6 @@ const login = async (req, res) => {
     };
 
     const token = jwt.sign(user, jwtSecret, { expiresIn: '1d' });
-
     res.status(200).json({
       message: 'Login successfully',
       data: { user, token, },
@@ -73,7 +61,4 @@ const logout = (req, res) => {
   });
 };
 
-module.exports = {
-  login,
-  logout,
-};
+module.exports = { login, logout };

@@ -87,6 +87,9 @@ create table submission_values (
 insert into accounts(email,password,type_of_account)
 values ('admin@test.com','admin','admin');
 
+insert into accounts(email,password,type_of_account)
+values ('worker@test.com','worker','worker');
+
 select * from accounts;
 select * from forms;
 select * from form_fields;

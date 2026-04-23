@@ -76,11 +76,9 @@ const checkFormExists = async (formId) => {
 
 const getFieldById = async (formId, fieldId) => {
   const fields = await query('select * from form_fields where id = ? and form_id = ?', [fieldId, formId]);
-
   if (fields.length === 0) {
     return null;
   }
-
   const options = await query(
     `select id, field_id, option_label, option_value, display_order, created_at
     from field_options
@@ -94,28 +92,23 @@ const getFieldById = async (formId, fieldId) => {
 
 const validateFieldBody = (body, isUpdate = false) => {
   const errors = [];
-
   if (!isUpdate || Object.prototype.hasOwnProperty.call(body, 'label')) {
     if (!body.label || typeof body.label !== 'string' || body.label.trim() === '') {
       errors.push('label is required');
     }
   }
-
   if (!isUpdate || Object.prototype.hasOwnProperty.call(body, 'field_type')) {
     if (!validTypes.includes(body.field_type)) {
       errors.push('field_type must be text, number, date, color, or select');
     }
   }
-
   if (body.max_length !== undefined && body.max_length !== null && Number(body.max_length) < 0) {
     errors.push('max_length must be greater than or equal to 0');
   }
-
-  if (
-    body.min_value !== undefined &&
-    body.max_value !== undefined &&
-    body.min_value !== null &&
-    body.max_value !== null &&
+  if (body.min_value !== undefined &&
+      body.max_value !== undefined &&
+      body.min_value !== null &&
+      body.max_value !== null &&
     Number(body.min_value) > Number(body.max_value)
   ) {
     errors.push('min_value cannot be greater than max_value');
@@ -141,8 +134,7 @@ const insertOptions = async (fieldId, options = []) => {
     await query(
       `insert into field_options (field_id, option_label, option_value, display_order)
       values (?, ?, ?, ?)`,
-      [
-        fieldId,
+      [ fieldId,
         option.option_label.trim(),
         option.option_value.trim(),
         Number(option.display_order) || index,
@@ -153,16 +145,11 @@ const insertOptions = async (fieldId, options = []) => {
 
 const createField = async (req, res) => {
   const { id } = req.params;
-
-  if (!isPositiveId(id)) {
-    return res.status(400).json({ message: 'Invalid form id' });
-  }
+  if (!isPositiveId(id)) return res.status(400).json({ message: 'Invalid form id' });
 
   const errors = validateFieldBody(req.body);
-  if (errors.length > 0) {
-    return res.status(400).json({ message: errors[0], errors });
-  }
-
+  if (errors.length > 0) return res.status(400).json({ message: errors[0], errors });
+  
   const {
     label,
     field_type,
@@ -181,12 +168,10 @@ const createField = async (req, res) => {
     }
 
     await beginTransaction();
-
     const result = await query(
       `insert into form_fields (form_id, label, field_type, display_order, is_required, max_length, min_value, max_value, allow_past_date)
       values (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        id,
+      [ id,
         label.trim(),
         field_type,
         Number(display_order) || 0,
@@ -198,12 +183,9 @@ const createField = async (req, res) => {
       ]
     );
 
-    if (field_type === 'select') {
-      await insertOptions(result.insertId, options);
-    }
-
+    if (field_type === 'select') await insertOptions(result.insertId, options);
+    
     await commit();
-
     const field = await getFieldById(id, result.insertId);
 
     res.status(201).json({
@@ -218,19 +200,10 @@ const createField = async (req, res) => {
 
 const updateField = async (req, res) => {
   const { id, fid } = req.params;
-
-  if (!isPositiveId(id)) {
-    return res.status(400).json({ message: 'Invalid form id' });
-  }
-
-  if (!isPositiveId(fid)) {
-    return res.status(400).json({ message: 'Invalid field id' });
-  }
-
+  if (!isPositiveId(id)) return res.status(400).json({ message: 'Invalid form id' });
+  if (!isPositiveId(fid)) return res.status(400).json({ message: 'Invalid field id' });
   const errors = validateFieldBody(req.body, true);
-  if (errors.length > 0) {
-    return res.status(400).json({ message: errors[0], errors });
-  }
+  if (errors.length > 0) return res.status(400).json({ message: errors[0], errors });
 
   const allowedFields = [
     'label',
@@ -250,22 +223,13 @@ const updateField = async (req, res) => {
     }
   });
 
-  if (Object.keys(updates).length === 0 && req.body.options === undefined) {
+  if (Object.keys(updates).length === 0 && req.body.options === undefined)
     return res.status(400).json({ message: 'No valid field data to update' });
-  }
-
-  if (updates.label !== undefined) {
-    updates.label = updates.label.trim();
-  }
-  if (updates.display_order !== undefined) {
-    updates.display_order = Number(updates.display_order) || 0;
-  }
-  if (updates.is_required !== undefined) {
-    updates.is_required = toMysqlBoolean(updates.is_required);
-  }
-  if (updates.allow_past_date !== undefined) {
-    updates.allow_past_date = toMysqlBoolean(updates.allow_past_date);
-  }
+  if (updates.label !== undefined) updates.label = updates.label.trim();
+  if (updates.display_order !== undefined) updates.display_order = Number(updates.display_order) || 0; 
+  if (updates.is_required !== undefined) updates.is_required = toMysqlBoolean(updates.is_required);
+  if (updates.allow_past_date !== undefined) updates.allow_past_date = toMysqlBoolean(updates.allow_past_date);
+  
   ['max_length', 'min_value', 'max_value'].forEach((field) => {
     if (updates[field] !== undefined) {
       updates[field] = toNullableNumber(updates[field]);
@@ -274,12 +238,9 @@ const updateField = async (req, res) => {
 
   try {
     const currentField = await getFieldById(id, fid);
-    if (!currentField) {
-      return res.status(404).json({ message: 'Field not found' });
-    }
-
+    if (!currentField) return res.status(404).json({ message: 'Field not found' });
+  
     await beginTransaction();
-
     if (Object.keys(updates).length > 0) {
       const setClause = Object.keys(updates).map((field) => `${field} = ?`).join(', ');
       await query(`update form_fields set ${setClause} where id = ? and form_id = ?`, [
@@ -288,7 +249,6 @@ const updateField = async (req, res) => {
         id,
       ]);
     }
-
     const nextType = updates.field_type || currentField.field_type;
     if (req.body.options !== undefined || nextType !== 'select') {
       await query('delete from field_options where field_id = ?', [fid]);
@@ -299,9 +259,7 @@ const updateField = async (req, res) => {
     }
 
     await commit();
-
     const field = await getFieldById(id, fid);
-
     res.status(200).json({
       message: 'Update field successfully',
       data: field,
@@ -314,30 +272,15 @@ const updateField = async (req, res) => {
 
 const deleteField = async (req, res) => {
   const { id, fid } = req.params;
-
-  if (!isPositiveId(id)) {
-    return res.status(400).json({ message: 'Invalid form id' });
-  }
-
-  if (!isPositiveId(fid)) {
-    return res.status(400).json({ message: 'Invalid field id' });
-  }
-
+  if (!isPositiveId(id)) return res.status(400).json({ message: 'Invalid form id' });
+  if (!isPositiveId(fid))  return res.status(400).json({ message: 'Invalid field id' });
   try {
     const result = await query('delete from form_fields where id = ? and form_id = ?', [fid, id]);
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: 'Field not found' });
-    }
-
+    if (result.affectedRows === 0) return res.status(404).json({ message: 'Field not found' });
     res.status(200).json({ message: 'Delete field successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Cannot delete field', error: error.message });
   }
 };
 
-module.exports = {
-  createField,
-  updateField,
-  deleteField,
-};
+module.exports = { createField, updateField, deleteField };
