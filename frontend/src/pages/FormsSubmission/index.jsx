@@ -1,8 +1,8 @@
 /* eslint-disable react/prop-types */
 import { useEffect, useMemo, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { Logout, Refresh, Send } from "@mui/icons-material";
-import { Alert, MenuItem, Snackbar, TextField } from "@mui/material";
+import { Close, Logout, Refresh, Send } from "@mui/icons-material";
+import { Alert, Dialog, DialogContent, DialogTitle, MenuItem, Snackbar, TextField } from "@mui/material";
 import { useAuthContext } from "../../../hooks/useAuthContext";
 import { useLogout } from "../../../hooks/useLogout";
 import api from "../../services/fetchAPI";
@@ -80,6 +80,7 @@ export default function FormsSubmission() {
   const isAdmin = role === "admin";
   const [activeForms, setActiveForms] = useState([]);
   const [selectedSubmitFormId, setSelectedSubmitFormId] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [submissionValues, setSubmissionValues] = useState({});
   const [notice, setNotice] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -130,6 +131,7 @@ export default function FormsSubmission() {
       await api.submitForm(token, selectedSubmitFormId, submissionValues);
       showNotice("success", "Form submitted");
       setSubmissionValues({});
+      setIsModalOpen(false);
     } catch (error) {
       showNotice(
         "error",
@@ -203,70 +205,138 @@ export default function FormsSubmission() {
     );
   };
 
+  const openFormModal = (formId) => {
+    setSelectedSubmitFormId(formId);
+    setSubmissionValues({});
+    setIsModalOpen(true);
+  };
+
+  const closeFormModal = () => {
+    setIsModalOpen(false);
+    setSubmissionValues({});
+  };
+
   return (
-    <SubmissionPageLayout user={user} role={role} isAdmin={isAdmin} onLogout={handleLogout}>
+    <SubmissionPageLayout
+      user={user}
+      role={role}
+      isAdmin={isAdmin}
+      onLogout={handleLogout}
+    >
       <section className="p-5 bg-white border border-blue-100 rounded-lg">
         <div className="flex items-center justify-between gap-3 mb-4">
           <div>
             <h2 className="text-lg font-semibold text-slate-900">
               Form Submission
             </h2>
-            <p className="text-sm text-slate-500">Fill active forms.</p>
+            <p className="text-sm text-slate-500">
+              Select an active form to open and submit it.
+            </p>
           </div>
           <IconButton label="Refresh" onClick={loadActiveForms}>
             <Refresh fontSize="small" />
           </IconButton>
         </div>
 
-        <form onSubmit={handleSubmitForm} className="grid gap-4">
-          <TextField
-            label="Active Form"
-            size="small"
-            select
-            value={selectedSubmitFormId}
-            onChange={(event) => {
-              setSelectedSubmitFormId(event.target.value);
-              setSubmissionValues({});
-            }}
-          >
-            {activeForms.map((form) => (
-              <MenuItem key={form.id} value={form.id}>
-                {form.title}
-              </MenuItem>
-            ))}
-          </TextField>
-
-          {selectedSubmitForm && (
-            <div className="p-4 border border-blue-100 rounded-md">
-              <div className="mb-4">
-                <h3 className="font-semibold text-slate-900">
-                  {selectedSubmitForm.title}
-                </h3>
-                <p className="text-sm text-slate-500">
-                  {selectedSubmitForm.form_description}
-                </p>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {activeForms.map((form) => (
+            <button
+              key={form.id}
+              type="button"
+              onClick={() => openFormModal(form.id)}
+              className="p-5 text-left transition bg-white border border-blue-100 rounded-lg hover:border-blue-300 hover:bg-blue-50"
+            >
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <div className="min-w-0">
+                  <h3 className="text-lg font-semibold truncate text-slate-900">
+                    {form.title}
+                  </h3>
+                  <p className="mt-1 text-xs font-medium tracking-wide text-blue-600 uppercase">
+                    Active form
+                  </p>
+                </div>
+                <span className="px-2 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded-md">
+                  #{form.display_order}
+                </span>
               </div>
-              <div className="grid gap-3 md:grid-cols-2">
-                {(selectedSubmitForm.fields || []).map(renderInputForField)}
+              <p className="text-sm line-clamp-3 text-slate-500">
+                {form.form_description || "No description"}
+              </p>
+              <div className="mt-4 text-sm text-slate-600">
+                {(form.fields || []).length} field
+                {(form.fields || []).length === 1 ? "" : "s"}
               </div>
-              {selectedSubmitForm.fields?.length === 0 && (
-                <p className="text-sm text-slate-500">
-                  This active form has no fields.
-                </p>
-              )}
+            </button>
+          ))}
+          {activeForms.length === 0 && (
+            <div className="px-4 py-10 text-sm text-center border border-blue-100 rounded-lg bg-blue-50 text-slate-500 md:col-span-2 xl:col-span-3">
+              No active forms available.
             </div>
           )}
-
-          <button
-            type="submit"
-            disabled={loading || !selectedSubmitFormId}
-            className="inline-flex items-center h-10 gap-2 px-4 text-sm font-medium text-white bg-blue-600 rounded-md w-fit hover:bg-blue-700 disabled:opacity-60"
-          >
-            <Send fontSize="small" />
-            Submit Form
-          </button>
-        </form>
+        </div>
       </section>
+
+      <Dialog
+        open={isModalOpen}
+        onClose={closeFormModal}
+        fullWidth
+        maxWidth="md"
+      >
+        <DialogTitle className="border-b border-blue-100">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h3 className="text-xl font-semibold text-slate-900">
+                {selectedSubmitForm?.title}
+              </h3>
+              <p className="mt-1 text-sm text-slate-500">
+                {selectedSubmitForm?.form_description}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={closeFormModal}
+              className="inline-flex items-center justify-center rounded-md h-9 w-9 text-slate-500 hover:bg-blue-50 hover:text-slate-700"
+              aria-label="Close form dialog"
+            >
+              <Close fontSize="small" />
+            </button>
+          </div>
+        </DialogTitle>
+        <DialogContent className="bg-blue-50">
+          <form onSubmit={handleSubmitForm} className="grid gap-4 py-4">
+            {selectedSubmitForm && (
+              <div className="p-4 bg-white border border-blue-100 rounded-md">
+                <div className="grid gap-3 md:grid-cols-2">
+                  {(selectedSubmitForm.fields || []).map(renderInputForField)}
+                </div>
+                {selectedSubmitForm.fields?.length === 0 && (
+                  <p className="text-sm text-slate-500">
+                    This active form has no fields.
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={closeFormModal}
+                className="h-10 px-4 text-sm font-medium border rounded-md border-slate-300 text-slate-700"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading || !selectedSubmitFormId}
+                className="inline-flex items-center h-10 gap-2 px-4 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-60"
+              >
+                <Send fontSize="small" />
+                Submit Form
+              </button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <Snackbar
         open={Boolean(notice)}
