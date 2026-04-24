@@ -1,0 +1,146 @@
+# Dependencies
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage
+*.lcov
+
+# nyc test coverage
+.nyc_output
+
+# Dependency directories
+jspm_packages/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env.*.local
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Docker files
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Documentation
+README.md
+*.md
+docs/
+
+# Test files
+test/
+*.spec.ts
+*.test.ts
+jest.config.*
+coverage/
+
+# Build artifacts (will be built inside container)
+dist/
+build/
+
+# Logs
+logs
+*.log
+
+# Cache directories
+.cache/
+.parcel-cache/
+
+# Temporary folders
+tmp/
+temp/
+
+# Lock files (yarn.lock will be copied explicitly in Dockerfile)
+package-lock.json
+
+# Prisma generated client (will be generated in container)
+# We keep prisma folder for schema but exclude generated files
+node_modules/.prisma/
+prisma/generated/
+
+# Development configurations
+.prettierrc*
+.eslintrc*
+eslint.config.*
+jest.config.*
+# tsconfig.json
+# tsconfig.build.json
+# nest-cli.json
+
+# CI/CD files
+.github/
+.gitlab-ci.yml
+.travis.yml
+.circleci/
+
+# Deployment files - Comment out if you need nginx config in container
+# nginx/
+k8s/
+helm/
+terraform/
+
+# Secrets and certificates
+*.pem
+*.key
+*.crt
+.secrets/
+secrets/
+
+# Backup files
+*.backup
+*.bak
+
+# Keep these important files (override exclusions)
+!package.json
+!yarn.lock
+!src/
