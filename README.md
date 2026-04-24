@@ -76,7 +76,9 @@ All the demonstration can be found in [assets](assets).
 4. Connect databse on MySQL with [db.sql](backend/mysql-init.sql) and [.env](backend/.env.example) file
 
 ### Containerization
+Run with `docker compose up --build`
 
+Stop and delete the container: `docker compose down -v`
 
 ## Usage
 To run the local website, use the following command for both frontend and backend server:
