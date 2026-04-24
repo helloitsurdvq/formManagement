@@ -36,21 +36,10 @@ const getFormWithFields = async (formId) => {
 
   const rows = await query(
     `select
-      ff.id as field_id,
-      ff.form_id,
-      ff.label,
-      ff.field_type,
-      ff.display_order as field_display_order,
-      ff.is_required,
-      ff.max_length,
-      ff.min_value,
-      ff.max_value,
-      ff.allow_past_date,
-      ff.created_at as field_created_at,
-      ff.updated_at as field_updated_at,
-      fo.id as option_id,
-      fo.option_label,
-      fo.option_value,
+      ff.id as field_id, ff.form_id, ff.label, ff.field_type, ff.display_order as field_display_order, ff.is_required,
+      ff.max_length, ff.min_value, ff.max_value, ff.allow_past_date,
+      ff.created_at as field_created_at, ff.updated_at as field_updated_at,
+      fo.id as option_id, fo.option_label, fo.option_value,
       fo.display_order as option_display_order,
       fo.created_at as option_created_at
     from form_fields ff
@@ -158,8 +147,7 @@ const getFormById = async (req, res) => {
 const updateForm = async (req, res) => {
   try {
     const { id } = req.params;
-    if (!isPositiveId(id))
-      return res.status(400).json({ message: 'Invalid form id' });
+    if (!isPositiveId(id)) return res.status(400).json({ message: 'Invalid form id' });
 
     const allowedFields = ['title', 'form_description', 'display_order', 'form_status'];
     const updates = {};
@@ -196,13 +184,9 @@ const updateForm = async (req, res) => {
 const deleteForm = async (req, res) => {
   try {
     const { id } = req.params;
-    if (!isPositiveId(id)) {
-      return res.status(400).json({ message: 'Invalid form id' });
-    }
+    if (!isPositiveId(id)) return res.status(400).json({ message: 'Invalid form id' });
     const result = await query('delete from forms where id = ?', [id]);
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: 'Form not found' });
-    }
+    if (result.affectedRows === 0) return res.status(404).json({ message: 'Form not found' });
     res.status(200).json({ message: 'Delete form successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Cannot delete form', error: error.message });

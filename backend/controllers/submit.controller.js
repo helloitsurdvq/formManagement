@@ -50,28 +50,9 @@ const getSubmittedBy = (req) => req.user?.id || req.user?._id;
 const getActiveForms = async (req, res) => {
   try {
     const rows = await query(
-      `select
-        f.id,
-        f.title,
-        f.form_description,
-        f.display_order,
-        f.form_status,
-        f.created_by,
-        f.created_at,
-        f.updated_at,
-        ff.id as field_id,
-        ff.label,
-        ff.field_type,
-        ff.display_order as field_display_order,
-        ff.is_required,
-        ff.max_length,
-        ff.min_value,
-        ff.max_value,
-        ff.allow_past_date,
-        fo.id as option_id,
-        fo.option_label,
-        fo.option_value,
-        fo.display_order as option_display_order
+      `select f.id, f.title, f.form_description, f.display_order, f.form_status, f.created_by, f.created_at, f.updated_at,
+        ff.id as field_id, ff.label, ff.field_type, ff.display_order as field_display_order, ff.is_required, ff.max_length, ff.min_value, ff.max_value, ff.allow_past_date,
+        fo.id as option_id, fo.option_label, fo.option_value, fo.display_order as option_display_order
       from forms f
       left join form_fields ff on ff.form_id = f.id
       left join field_options fo on fo.field_id = ff.id
@@ -315,20 +296,9 @@ const getSubmissions = async (req, res) => {
     }
 
     const rows = await query(
-      `select
-        fs.id as submission_id,
-        fs.form_id,
-        f.title as form_title,
-        fs.submitted_by,
-        a.email as submitted_by_email,
-        fs.submitted_at,
-        sv.id as value_id,
-        sv.field_id,
-        ff.label,
-        ff.field_type,
-        sv.value_text,
-        sv.value_number,
-        sv.value_date
+      `select fs.id as submission_id, fs.form_id, f.title as form_title, fs.submitted_by, 
+        a.email as submitted_by_email, fs.submitted_at, sv.id as value_id, sv.field_id,
+        ff.label, ff.field_type, sv.value_text, sv.value_number, sv.value_date
       from form_submissions fs
       join forms f on f.id = fs.form_id
       join accounts a on a.id = fs.submitted_by
