@@ -3,6 +3,9 @@ Author: **Đinh Việt Quang**
 
 ## Features done
 
+***The entity relationship diagram*** is [here](backend/db-erd.png).
+
+
 ### Authentication
 ```txt
 ✅ POST     /api/users/login        Login
@@ -49,7 +52,9 @@ Author: **Đinh Việt Quang**
   - submit forms
   - view only their own submissions
 
-All the demonstration can be found in [assets](assets)
+
+All the demonstration can be found in [assets](assets). 
+
 
 ## Setup 
 ### Local setup 
@@ -68,7 +73,7 @@ All the demonstration can be found in [assets](assets)
   cd backend
   npm install
 ```
-4. Connect databse on MySQL with [db.sql](backend/db.sql) and [.env](backend/.env.example) file
+4. Connect databse on MySQL with [db.sql](backend/mysql-init.sql) and [.env](backend/.env.example) file
 
 ### Containerization
 

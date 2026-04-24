@@ -9,3 +9,4 @@ WORKDIR /app
 COPY --from=BUILD_IMAGE /app/node_modules ./node_modules
 COPY . .
 EXPOSE 3000
+CMD ["node", "index.js"]
