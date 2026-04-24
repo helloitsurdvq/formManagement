@@ -8,8 +8,8 @@ Author: **Đinh Việt Quang**
 
 ### Authentication
 ```txt
-✅ POST     /api/users/login        Login
-✅ POST    /api//users/logout       Logout
+✅ POST    /api/users/login        Login
+✅ POST    /api/users/logout       Logout
 ```
 ### Form management
 
